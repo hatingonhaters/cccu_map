@@ -23,7 +23,30 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
-<div id="buttons">
+
+    <div id="filter">
+      <label for="denomination-select"><strong>Filter by Denomination:</strong></label><br/>
+      <select id="denomination-select" onchange="filterByDenomination()">
+        <option value="All">All</option>
+<option value="Anabaptist">Anabaptist</option>
+<option value="Baptist">Baptist</option>
+<option value="Church of God">Church of God</option>
+<option value="Churches of Christ">Churches of Christ</option>
+<option value="Evangelical Christian">Evangelical Christian</option>
+<option value="Friends">Friends</option>
+<option value="Interdenominational">Interdenominational</option>
+<option value="Lutheran">Lutheran</option>
+<option value="Methodist">Methodist</option>
+<option value="Not applicable">Not applicable</option>
+<option value="Pentecostal">Pentecostal</option>
+<option value="Presbyterian">Presbyterian</option>
+<option value="Protestant">Protestant</option>
+<option value="Seventh Day Adventist">Seventh Day Adventist</option>
+<option value="Wesleyan">Wesleyan</option>
+      </select>
+    </div>
+    <div id="buttons">
+    
   <strong>Color by:</strong><br/>
   <button onclick="updateMap('Survivability')">Survivability</button>
   <button onclick="updateMap('aCFI_Percentile')">aCFI</button>
@@ -1222,15 +1245,31 @@
 
   let currentMetric = "Survivability";
   const layerGroup = L.layerGroup().addTo(map);
+let currentDenomination = 'All';
 
   function updateMap(metric) {
+  currentMetric = metric;
+  renderMap();
+}
+
+function filterByDenomination() {
+  currentDenomination = document.getElementById('denomination-select').value;
+  renderMap();
+}
+
+function renderMap() {
+  layerGroup.clearLayers();
+  const values = data.map(d => +d[currentMetric]);
+  colorScale.domain(values);
     currentMetric = metric;
     layerGroup.clearLayers();
 
     const values = data.map(d => +d[metric]);
     colorScale.domain(values);
 
-    data.forEach(d => {
+    
+    data.filter(d => currentDenomination === 'All' || d.Religion === currentDenomination).forEach(d => {
+    
       const color = colorScale(+d[metric]);
       const marker = L.circleMarker([d.Latitude, d.Longitude], {
         radius: 7,
