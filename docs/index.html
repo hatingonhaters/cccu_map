@@ -1,0 +1,1259 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>CCCU University Survivability Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body, #map { height: 100%; margin: 0; }
+    #legend, #filter {
+      position: fixed;
+      z-index: 9999;
+      background: white;
+      padding: 10px;
+      border: 2px solid grey;
+      font-size: 14px;
+    }
+    #legend { bottom: 30px; left: 30px; width: 230px; }
+    #filter { top: 10px; left: 30px; }
+    #buttons { position: fixed; top: 10px; right: 30px; z-index: 9999; background: white; border: 2px solid grey; padding: 10px; }
+    button { margin: 2px; padding: 6px 10px; font-size: 14px; }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+<div id="buttons">
+  <strong>Color by:</strong><br/>
+  <button onclick="updateMap('Survivability')">Survivability</button>
+  <button onclick="updateMap('aCFI_Percentile')">aCFI</button>
+  <button onclick="updateMap('Academic_Efficiency_Percentile')">Efficiency</button>
+  <button onclick="updateMap('Market_Saturation_Percentile')">Market</button>
+</div>
+<div id="legend">
+  <b>Metric Quantile</b><br>
+  <i style="color:#006837;">⬤</i> Elite<br>
+  <i style="color:#1a9850;">⬤</i> Excellent<br>
+  <i style="color:#66bd63;">⬤</i> Very Strong<br>
+  <i style="color:#a6d96a;">⬤</i> Strong<br>
+  <i style="color:#d9ef8b;">⬤</i> Stable<br>
+  <i style="color:#fee08b;">⬤</i> Vulnerable<br>
+  <i style="color:#fdae61;">⬤</i> Endangered<br>
+  <i style="color:#f46d43;">⬤</i> Critical<br>
+</div>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+  const data = [
+  {
+    "University": "Abilene Christian University",
+    "City": "Abilene",
+    "State": "TX",
+    "Religion": "Churches of Christ",
+    "Market_Saturation_Percentile": 90.99,
+    "Academic_Efficiency_Percentile": 53.19,
+    "aCFI_Percentile": 51.04,
+    "Survivability": 67.446,
+    "Latitude": 32.4699728,
+    "Longitude": -99.70735954838815
+  },
+  {
+    "University": "Anderson University",
+    "City": "Anderson",
+    "State": "SC",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 85.31,
+    "Academic_Efficiency_Percentile": 52.43,
+    "aCFI_Percentile": 99.68,
+    "Survivability": 84.493,
+    "Latitude": 34.51478935,
+    "Longitude": -82.63874687710373
+  },
+  {
+    "University": "Anderson University",
+    "City": "Anderson",
+    "State": "SC",
+    "Religion": "Church of God",
+    "Market_Saturation_Percentile": 42.35,
+    "Academic_Efficiency_Percentile": 40.13,
+    "aCFI_Percentile": 49.0,
+    "Survivability": 44.568,
+    "Latitude": 40.11455395,
+    "Longitude": -85.6607189805517
+  },
+  {
+    "University": "Anderson University",
+    "City": "Anderson",
+    "State": "IN",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 85.31,
+    "Academic_Efficiency_Percentile": 52.43,
+    "aCFI_Percentile": 99.68,
+    "Survivability": 84.493,
+    "Latitude": 34.51478935,
+    "Longitude": -82.63874687710373
+  },
+  {
+    "University": "Anderson University",
+    "City": "Anderson",
+    "State": "IN",
+    "Religion": "Church of God",
+    "Market_Saturation_Percentile": 42.35,
+    "Academic_Efficiency_Percentile": 40.13,
+    "aCFI_Percentile": 49.0,
+    "Survivability": 44.568,
+    "Latitude": 40.11455395,
+    "Longitude": -85.6607189805517
+  },
+  {
+    "University": "Arizona Christian University",
+    "City": "Glendale",
+    "State": "AZ",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 63.34,
+    "Academic_Efficiency_Percentile": 40.09,
+    "aCFI_Percentile": 48.32,
+    "Survivability": 52.682,
+    "Latitude": 33.622613349999995,
+    "Longitude": -112.18260582017332
+  },
+  {
+    "University": "Asbury University",
+    "City": "Wilmore",
+    "State": "KY",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 50.2,
+    "Academic_Efficiency_Percentile": 43.01,
+    "aCFI_Percentile": 53.39,
+    "Survivability": 50.04,
+    "Latitude": 37.8633341,
+    "Longitude": -84.66528114627815
+  },
+  {
+    "University": "Baylor University",
+    "City": "Waco",
+    "State": "TX",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 99.87,
+    "Academic_Efficiency_Percentile": 95.25,
+    "aCFI_Percentile": 51.24,
+    "Survivability": 79.48,
+    "Latitude": 31.55043405,
+    "Longitude": -97.1102905567766
+  },
+  {
+    "University": "Belhaven University",
+    "City": "Jackson",
+    "State": "MS",
+    "Religion": "Presbyterian",
+    "Market_Saturation_Percentile": 40.21,
+    "Academic_Efficiency_Percentile": 41.57,
+    "aCFI_Percentile": 49.8,
+    "Survivability": 44.321,
+    "Latitude": 32.320139100000006,
+    "Longitude": -90.1690571965284
+  },
+  {
+    "University": "Bethany Lutheran College",
+    "City": "Mankato",
+    "State": "MN",
+    "Religion": "Lutheran",
+    "Market_Saturation_Percentile": 36.05,
+    "Academic_Efficiency_Percentile": 39.47,
+    "aCFI_Percentile": 50.8,
+    "Survivability": 42.638,
+    "Latitude": 44.16674125,
+    "Longitude": -93.99104281930204
+  },
+  {
+    "University": "Bethel University",
+    "City": "Saint Paul",
+    "State": "MN",
+    "Religion": "Presbyterian",
+    "Market_Saturation_Percentile": 38.71,
+    "Academic_Efficiency_Percentile": 45.03,
+    "aCFI_Percentile": 48.92,
+    "Survivability": 44.06,
+    "Latitude": 36.14145385,
+    "Longitude": -88.51552576233773
+  },
+  {
+    "University": "Bethel University",
+    "City": "Saint Paul",
+    "State": "MN",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 33.69,
+    "Academic_Efficiency_Percentile": 41.02,
+    "aCFI_Percentile": 49.08,
+    "Survivability": 41.315,
+    "Latitude": 41.6763764,
+    "Longitude": -86.19332967026835
+  },
+  {
+    "University": "Bethel University",
+    "City": "Mishawaka",
+    "State": "IN",
+    "Religion": "Presbyterian",
+    "Market_Saturation_Percentile": 38.71,
+    "Academic_Efficiency_Percentile": 45.03,
+    "aCFI_Percentile": 48.92,
+    "Survivability": 44.06,
+    "Latitude": 36.14145385,
+    "Longitude": -88.51552576233773
+  },
+  {
+    "University": "Bethel University",
+    "City": "Mishawaka",
+    "State": "IN",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 33.69,
+    "Academic_Efficiency_Percentile": 41.02,
+    "aCFI_Percentile": 49.08,
+    "Survivability": 41.315,
+    "Latitude": 41.6763764,
+    "Longitude": -86.19332967026835
+  },
+  {
+    "University": "Biola University",
+    "City": "La Mirada",
+    "State": "CA",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 61.71,
+    "Academic_Efficiency_Percentile": 53.35,
+    "aCFI_Percentile": 49.36,
+    "Survivability": 55.096,
+    "Latitude": 33.90686,
+    "Longitude": -118.01521719065124
+  },
+  {
+    "University": "Bluefield University",
+    "City": "Bluefield",
+    "State": "VA",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 30.68,
+    "Academic_Efficiency_Percentile": 42.66,
+    "aCFI_Percentile": 52.59,
+    "Survivability": 41.844,
+    "Latitude": 37.24510425,
+    "Longitude": -81.24800239953215
+  },
+  {
+    "University": "Bushnell University",
+    "City": "Eugene",
+    "State": "OR",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 26.93,
+    "Academic_Efficiency_Percentile": 40.9,
+    "aCFI_Percentile": 94.34,
+    "Survivability": 56.705,
+    "Latitude": 44.0490835,
+    "Longitude": -123.08130104578522
+  },
+  {
+    "University": "California Baptist University",
+    "City": "Riverside",
+    "State": "CA",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 84.21,
+    "Academic_Efficiency_Percentile": 88.06,
+    "aCFI_Percentile": 48.68,
+    "Survivability": 70.757,
+    "Latitude": 33.928323899999995,
+    "Longitude": -117.42592062058483
+  },
+  {
+    "University": "Calvin University",
+    "City": "Grand Rapids",
+    "State": "MI",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 60.95,
+    "Academic_Efficiency_Percentile": 49.0,
+    "aCFI_Percentile": 51.71,
+    "Survivability": 54.864,
+    "Latitude": 42.9320314,
+    "Longitude": -85.58036402193719
+  },
+  {
+    "University": "Campbell University",
+    "City": "Buies Creek",
+    "State": "NC",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 49.28,
+    "Academic_Efficiency_Percentile": 57.97,
+    "aCFI_Percentile": 49.52,
+    "Survivability": 51.112,
+    "Latitude": 35.408071,
+    "Longitude": -78.73924679769573
+  },
+  {
+    "University": "Charleston Southern University",
+    "City": "Charleston",
+    "State": "SC",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 71.23,
+    "Academic_Efficiency_Percentile": 47.61,
+    "aCFI_Percentile": 49.44,
+    "Survivability": 57.788,
+    "Latitude": 32.9826445,
+    "Longitude": -80.07109661611514
+  },
+  {
+    "University": "College of the Ozarks",
+    "City": "Point Lookout",
+    "State": "MO",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 35.42,
+    "Academic_Efficiency_Percentile": 41.96,
+    "aCFI_Percentile": 58.51,
+    "Survivability": 45.97,
+    "Latitude": 36.617958,
+    "Longitude": -93.23650382366762
+  },
+  {
+    "University": "Colorado Christian University",
+    "City": "Lakewood",
+    "State": "CO",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 52.31,
+    "Academic_Efficiency_Percentile": 58.63,
+    "aCFI_Percentile": 48.44,
+    "Survivability": 52.024,
+    "Latitude": 39.7129396,
+    "Longitude": -105.0952693636912
+  },
+  {
+    "University": "Concordia University-Chicago",
+    "City": "River Forest",
+    "State": "IL",
+    "Religion": "Lutheran",
+    "Market_Saturation_Percentile": 36.84,
+    "Academic_Efficiency_Percentile": 61.64,
+    "aCFI_Percentile": 48.8,
+    "Survivability": 46.583,
+    "Latitude": 41.8993058,
+    "Longitude": -87.80945756076432
+  },
+  {
+    "University": "Concordia University-Irvine",
+    "City": "Irvine",
+    "State": "CA",
+    "Religion": "Lutheran",
+    "Market_Saturation_Percentile": 41.37,
+    "Academic_Efficiency_Percentile": 57.89,
+    "aCFI_Percentile": 49.52,
+    "Survivability": 47.933,
+    "Latitude": 33.653932999999995,
+    "Longitude": -117.81089996543902
+  },
+  {
+    "University": "Concordia University-Nebraska",
+    "City": "Seward",
+    "State": "NE",
+    "Religion": "Lutheran",
+    "Market_Saturation_Percentile": 43.49,
+    "Academic_Efficiency_Percentile": 46.57,
+    "aCFI_Percentile": 51.2,
+    "Survivability": 47.192,
+    "Latitude": 40.9136406,
+    "Longitude": -97.08751020355166
+  },
+  {
+    "University": "Cornerstone University",
+    "City": "Grand Rapids",
+    "State": "MI",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 41.45,
+    "Academic_Efficiency_Percentile": 42.58,
+    "aCFI_Percentile": 52.71,
+    "Survivability": 46.183,
+    "Latitude": 42.98088915,
+    "Longitude": -85.59574235212932
+  },
+  {
+    "University": "Crown College",
+    "City": "Saint Bonifacius",
+    "State": "MN",
+    "Religion": "Evangelical Christian",
+    "Market_Saturation_Percentile": 38.55,
+    "Academic_Efficiency_Percentile": 42.39,
+    "aCFI_Percentile": 49.0,
+    "Survivability": 43.5,
+    "Latitude": 44.88413435,
+    "Longitude": -93.74256433121
+  },
+  {
+    "University": "Dallas Baptist University",
+    "City": "Dallas",
+    "State": "TX",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 84.3,
+    "Academic_Efficiency_Percentile": 47.49,
+    "aCFI_Percentile": 53.98,
+    "Survivability": 64.808,
+    "Latitude": 32.7108312,
+    "Longitude": -96.946767972549
+  },
+  {
+    "University": "Dordt University",
+    "City": "Sioux Center",
+    "State": "IA",
+    "Religion": "Church of God",
+    "Market_Saturation_Percentile": 47.41,
+    "Academic_Efficiency_Percentile": 43.41,
+    "aCFI_Percentile": 51.0,
+    "Survivability": 48.048,
+    "Latitude": 43.08066095,
+    "Longitude": -96.16404679319116
+  },
+  {
+    "University": "East Texas Baptist University",
+    "City": "Marshall",
+    "State": "TX",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 58.0,
+    "Academic_Efficiency_Percentile": 42.5,
+    "aCFI_Percentile": 49.68,
+    "Survivability": 51.573,
+    "Latitude": 32.557952650000004,
+    "Longitude": -94.37511342798528
+  },
+  {
+    "University": "Erskine College",
+    "City": "Due West",
+    "State": "SC",
+    "Religion": "Presbyterian",
+    "Market_Saturation_Percentile": 45.82,
+    "Academic_Efficiency_Percentile": 38.86,
+    "aCFI_Percentile": 50.32,
+    "Survivability": 46.231,
+    "Latitude": 34.33219835,
+    "Longitude": -82.39299839413458
+  },
+  {
+    "University": "Evangel University",
+    "City": "Springfield",
+    "State": "MO",
+    "Religion": "Pentecostal",
+    "Market_Saturation_Percentile": 34.9,
+    "Academic_Efficiency_Percentile": 44.39,
+    "aCFI_Percentile": 49.76,
+    "Survivability": 42.745,
+    "Latitude": 37.22175245,
+    "Longitude": -93.26497163536374
+  },
+  {
+    "University": "Faulkner University",
+    "City": "Montgomery",
+    "State": "AL",
+    "Religion": "Churches of Christ",
+    "Market_Saturation_Percentile": 36.5,
+    "Academic_Efficiency_Percentile": 48.52,
+    "aCFI_Percentile": 48.84,
+    "Survivability": 43.841,
+    "Latitude": 32.3854781,
+    "Longitude": -86.21710609904724
+  },
+  {
+    "University": "Fresno Pacific University",
+    "City": "Fresno",
+    "State": "CA",
+    "Religion": "Anabaptist",
+    "Market_Saturation_Percentile": 33.36,
+    "Academic_Efficiency_Percentile": 54.74,
+    "aCFI_Percentile": 48.76,
+    "Survivability": 43.796,
+    "Latitude": 36.72601005,
+    "Longitude": -119.73419010411482
+  },
+  {
+    "University": "Friends University",
+    "City": "Wichita",
+    "State": "KS",
+    "Religion": "Friends",
+    "Market_Saturation_Percentile": 36.66,
+    "Academic_Efficiency_Percentile": 42.9,
+    "aCFI_Percentile": 54.5,
+    "Survivability": 45.048,
+    "Latitude": 37.6784007,
+    "Longitude": -97.36542141621248
+  },
+  {
+    "University": "Geneva College",
+    "City": "Beaver Falls",
+    "State": "PA",
+    "Religion": "Presbyterian",
+    "Market_Saturation_Percentile": 32.38,
+    "Academic_Efficiency_Percentile": 40.75,
+    "aCFI_Percentile": 45.74,
+    "Survivability": 39.4,
+    "Latitude": 40.77108845,
+    "Longitude": -80.32171346880179
+  },
+  {
+    "University": "George Fox University",
+    "City": "Newberg",
+    "State": "OR",
+    "Religion": "Friends",
+    "Market_Saturation_Percentile": 56.12,
+    "Academic_Efficiency_Percentile": 54.82,
+    "aCFI_Percentile": 49.64,
+    "Survivability": 53.266,
+    "Latitude": 45.3038562,
+    "Longitude": -122.9665911824416
+  },
+  {
+    "University": "Gordon College",
+    "City": "Wenham",
+    "State": "MA",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 35.68,
+    "Academic_Efficiency_Percentile": 43.72,
+    "aCFI_Percentile": 49.92,
+    "Survivability": 42.987,
+    "Latitude": 42.5888528,
+    "Longitude": -70.8203006
+  },
+  {
+    "University": "Greenville University",
+    "City": "Greenville",
+    "State": "IL",
+    "Religion": "Methodist",
+    "Market_Saturation_Percentile": 33.58,
+    "Academic_Efficiency_Percentile": 40.79,
+    "aCFI_Percentile": 48.09,
+    "Survivability": 40.829,
+    "Latitude": 38.89648605,
+    "Longitude": -89.41250813892516
+  },
+  {
+    "University": "Hannibal-LaGrange University",
+    "City": "Hannibal",
+    "State": "MO",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 23.0,
+    "Academic_Efficiency_Percentile": 38.86,
+    "aCFI_Percentile": 56.28,
+    "Survivability": 39.491,
+    "Latitude": 39.732717750000006,
+    "Longitude": -91.39100114558696
+  },
+  {
+    "University": "Hardin-Simmons University",
+    "City": "Abilene",
+    "State": "TX",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 57.3,
+    "Academic_Efficiency_Percentile": 44.55,
+    "aCFI_Percentile": 51.12,
+    "Survivability": 52.279,
+    "Latitude": 32.4777117,
+    "Longitude": -99.73415759382408
+  },
+  {
+    "University": "Hope International University",
+    "City": "Fullerton",
+    "State": "CA",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 27.99,
+    "Academic_Efficiency_Percentile": 41.72,
+    "aCFI_Percentile": 48.44,
+    "Survivability": 38.919,
+    "Latitude": 33.8763883,
+    "Longitude": -117.88556902972496
+  },
+  {
+    "University": "Houghton University",
+    "City": "Houghton",
+    "State": "NY",
+    "Religion": "Wesleyan",
+    "Market_Saturation_Percentile": 30.89,
+    "Academic_Efficiency_Percentile": 40.44,
+    "aCFI_Percentile": 63.46,
+    "Survivability": 45.836,
+    "Latitude": 42.426287,
+    "Longitude": -78.155462892227
+  },
+  {
+    "University": "Howard Payne University",
+    "City": "Brownwood",
+    "State": "TX",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 37.75,
+    "Academic_Efficiency_Percentile": 38.94,
+    "aCFI_Percentile": 55.49,
+    "Survivability": 45.089,
+    "Latitude": 31.71642025,
+    "Longitude": -98.98631404578038
+  },
+  {
+    "University": "Huntingdon College",
+    "City": "Montgomery",
+    "State": "AL",
+    "Religion": "Methodist",
+    "Market_Saturation_Percentile": 51.2,
+    "Academic_Efficiency_Percentile": 40.01,
+    "aCFI_Percentile": 51.04,
+    "Survivability": 48.9,
+    "Latitude": 32.3493496,
+    "Longitude": -86.28521194328175
+  },
+  {
+    "University": "Indiana Wesleyan University-Marion",
+    "City": "Marion",
+    "State": "IN",
+    "Religion": "Wesleyan",
+    "Market_Saturation_Percentile": 56.36,
+    "Academic_Efficiency_Percentile": 14.57,
+    "aCFI_Percentile": 52.67,
+    "Survivability": 46.533,
+    "Latitude": 40.5163759,
+    "Longitude": -85.66416502625239
+  },
+  {
+    "University": "John Brown University",
+    "City": "Siloam Springs",
+    "State": "AR",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 39.17,
+    "Academic_Efficiency_Percentile": 43.37,
+    "aCFI_Percentile": 55.76,
+    "Survivability": 46.65,
+    "Latitude": 36.190836950000005,
+    "Longitude": -94.55957189163512
+  },
+  {
+    "University": "Johnson University",
+    "City": "Knoxville",
+    "State": "TN",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 31.92,
+    "Academic_Efficiency_Percentile": 41.76,
+    "aCFI_Percentile": 54.38,
+    "Survivability": 42.877,
+    "Latitude": 35.93541995,
+    "Longitude": -83.74939490120485
+  },
+  {
+    "University": "Judson University",
+    "City": "Elgin",
+    "State": "IL",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 33.14,
+    "Academic_Efficiency_Percentile": 41.53,
+    "aCFI_Percentile": 48.52,
+    "Survivability": 40.973,
+    "Latitude": 42.0609055,
+    "Longitude": -88.29150749046332
+  },
+  {
+    "University": "King University",
+    "City": "Bristol",
+    "State": "TN",
+    "Religion": "Presbyterian",
+    "Market_Saturation_Percentile": 29.74,
+    "Academic_Efficiency_Percentile": 41.49,
+    "aCFI_Percentile": 49.32,
+    "Survivability": 39.926,
+    "Latitude": 36.5877694,
+    "Longitude": -82.15980141522917
+  },
+  {
+    "University": "Lee University",
+    "City": "Cleveland",
+    "State": "TN",
+    "Religion": "Church of God",
+    "Market_Saturation_Percentile": 37.71,
+    "Academic_Efficiency_Percentile": 51.68,
+    "aCFI_Percentile": 52.35,
+    "Survivability": 46.362,
+    "Latitude": 35.1660778,
+    "Longitude": -84.86925196171154
+  },
+  {
+    "University": "LeTourneau University",
+    "City": "Longview",
+    "State": "TX",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 55.65,
+    "Academic_Efficiency_Percentile": 43.64,
+    "aCFI_Percentile": 45.03,
+    "Survivability": 48.999,
+    "Latitude": 32.46575895,
+    "Longitude": -94.726444524352
+  },
+  {
+    "University": "Lipscomb University",
+    "City": "Nashville",
+    "State": "TN",
+    "Religion": "Churches of Christ",
+    "Market_Saturation_Percentile": 64.21,
+    "Academic_Efficiency_Percentile": 59.44,
+    "aCFI_Percentile": 48.6,
+    "Survivability": 57.008,
+    "Latitude": 36.10507165,
+    "Longitude": -86.79864091820343
+  },
+  {
+    "University": "Malone University",
+    "City": "Canton",
+    "State": "OH",
+    "Religion": "Friends",
+    "Market_Saturation_Percentile": 29.81,
+    "Academic_Efficiency_Percentile": 41.02,
+    "aCFI_Percentile": 49.8,
+    "Survivability": 40.052,
+    "Latitude": 40.8265967,
+    "Longitude": -81.37980061905188
+  },
+  {
+    "University": "Messiah University",
+    "City": "Mechanicsburg",
+    "State": "PA",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 46.3,
+    "Academic_Efficiency_Percentile": 49.4,
+    "aCFI_Percentile": 49.32,
+    "Survivability": 48.128,
+    "Latitude": 40.19369145,
+    "Longitude": -76.97605268396879
+  },
+  {
+    "University": "Mid-America Christian University",
+    "City": "Oklahoma City",
+    "State": "OK",
+    "Religion": "Church of God",
+    "Market_Saturation_Percentile": 30.96,
+    "Academic_Efficiency_Percentile": 43.84,
+    "aCFI_Percentile": 49.4,
+    "Survivability": 40.915,
+    "Latitude": 35.3467159,
+    "Longitude": -97.57847646028875
+  },
+  {
+    "University": "MidAmerica Nazarene University",
+    "City": "Olathe",
+    "State": "KS",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 33.0,
+    "Academic_Efficiency_Percentile": 42.19,
+    "aCFI_Percentile": 56.04,
+    "Survivability": 44.059,
+    "Latitude": 38.87397135,
+    "Longitude": -94.782189935796
+  },
+  {
+    "University": "Mid-Atlantic Christian University",
+    "City": "Elizabeth City",
+    "State": "NC",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 25.75,
+    "Academic_Efficiency_Percentile": 38.09,
+    "aCFI_Percentile": 49.24,
+    "Survivability": 37.619,
+    "Latitude": 36.3044141,
+    "Longitude": -76.21636491459975
+  },
+  {
+    "University": "Mississippi College",
+    "City": "Clinton",
+    "State": "MS",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 54.38,
+    "Academic_Efficiency_Percentile": 56.32,
+    "aCFI_Percentile": 50.56,
+    "Survivability": 53.238,
+    "Latitude": 32.3354174,
+    "Longitude": -90.33188238452227
+  },
+  {
+    "University": "Missouri Baptist University",
+    "City": "Saint Louis",
+    "State": "MO",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 34.9,
+    "Academic_Efficiency_Percentile": 44.51,
+    "aCFI_Percentile": 49.48,
+    "Survivability": 42.656,
+    "Latitude": 38.6419861,
+    "Longitude": -90.46229806385276
+  },
+  {
+    "University": "Montreat College",
+    "City": "Montreat",
+    "State": "NC",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 34.68,
+    "Academic_Efficiency_Percentile": 39.74,
+    "aCFI_Percentile": 52.03,
+    "Survivability": 42.636,
+    "Latitude": 35.6459434,
+    "Longitude": -82.2970364
+  },
+  {
+    "University": "Moody Bible Institute",
+    "City": "Chicago",
+    "State": "IL",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 28.84,
+    "Academic_Efficiency_Percentile": 45.58,
+    "aCFI_Percentile": 52.39,
+    "Survivability": 41.612,
+    "Latitude": 41.9002764,
+    "Longitude": -87.6354882298403
+  },
+  {
+    "University": "North Central University",
+    "City": "Minneapolis",
+    "State": "MN",
+    "Religion": "Pentecostal",
+    "Market_Saturation_Percentile": 36.84,
+    "Academic_Efficiency_Percentile": 40.83,
+    "aCFI_Percentile": 49.68,
+    "Survivability": 42.777,
+    "Latitude": 44.9688959,
+    "Longitude": -93.2618548027095
+  },
+  {
+    "University": "North Park University",
+    "City": "Chicago",
+    "State": "IL",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 51.24,
+    "Academic_Efficiency_Percentile": 45.7,
+    "aCFI_Percentile": 50.52,
+    "Survivability": 49.845,
+    "Latitude": 41.97487485,
+    "Longitude": -87.70538274756231
+  },
+  {
+    "University": "Northwest Nazarene University",
+    "City": "Nampa",
+    "State": "ID",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 39.09,
+    "Academic_Efficiency_Percentile": 43.96,
+    "aCFI_Percentile": 50.56,
+    "Survivability": 44.654,
+    "Latitude": 43.5610104,
+    "Longitude": -116.56582397087747
+  },
+  {
+    "University": "Northwest University",
+    "City": "Kirkland",
+    "State": "WA",
+    "Religion": "Pentecostal",
+    "Market_Saturation_Percentile": 30.15,
+    "Academic_Efficiency_Percentile": 42.98,
+    "aCFI_Percentile": 48.29,
+    "Survivability": 39.975,
+    "Latitude": 47.65775615,
+    "Longitude": -122.19170992986534
+  },
+  {
+    "University": "Northwestern College",
+    "City": "Orange City",
+    "State": "IA",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 36.35,
+    "Academic_Efficiency_Percentile": 44.16,
+    "aCFI_Percentile": 51.68,
+    "Survivability": 44.047,
+    "Latitude": 42.9994485,
+    "Longitude": -96.0543218266804
+  },
+  {
+    "University": "Ohio Christian University",
+    "City": "Circleville",
+    "State": "OH",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 24.79,
+    "Academic_Efficiency_Percentile": 38.06,
+    "aCFI_Percentile": 60.3,
+    "Survivability": 41.656,
+    "Latitude": 39.6118927,
+    "Longitude": -82.90625672679114
+  },
+  {
+    "University": "Oklahoma Baptist University",
+    "City": "Shawnee",
+    "State": "OK",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 37.52,
+    "Academic_Efficiency_Percentile": 42.43,
+    "aCFI_Percentile": 51.36,
+    "Survivability": 44.041,
+    "Latitude": 35.364462950000004,
+    "Longitude": -96.93385103279996
+  },
+  {
+    "University": "Oral Roberts University",
+    "City": "Tulsa",
+    "State": "OK",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 62.25,
+    "Academic_Efficiency_Percentile": 49.24,
+    "aCFI_Percentile": 50.68,
+    "Survivability": 55.019,
+    "Latitude": 36.0508252,
+    "Longitude": -95.95213552843208
+  },
+  {
+    "University": "Ouachita Baptist University",
+    "City": "Arkadelphia",
+    "State": "AR",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 43.01,
+    "Academic_Efficiency_Percentile": 42.9,
+    "aCFI_Percentile": 50.36,
+    "Survivability": 45.93,
+    "Latitude": 34.1307617,
+    "Longitude": -93.05250677656252
+  },
+  {
+    "University": "Palm Beach Atlantic University",
+    "City": "West Palm Beach",
+    "State": "FL",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 77.19,
+    "Academic_Efficiency_Percentile": 46.37,
+    "aCFI_Percentile": 50.28,
+    "Survivability": 60.26,
+    "Latitude": 26.7048899,
+    "Longitude": -80.05085158341606
+  },
+  {
+    "University": "Pepperdine University",
+    "City": "Malibu",
+    "State": "CA",
+    "Religion": "Churches of Christ",
+    "Market_Saturation_Percentile": 63.76,
+    "Academic_Efficiency_Percentile": 83.52,
+    "aCFI_Percentile": 50.12,
+    "Survivability": 62.248,
+    "Latitude": 34.043010300000006,
+    "Longitude": -118.70934589328934
+  },
+  {
+    "University": "Point Loma Nazarene University",
+    "City": "San Diego",
+    "State": "CA",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 65.98,
+    "Academic_Efficiency_Percentile": 56.36,
+    "aCFI_Percentile": 49.08,
+    "Survivability": 57.293,
+    "Latitude": 32.7169659,
+    "Longitude": -117.2510853
+  },
+  {
+    "University": "Regent University",
+    "City": "Virginia Beach",
+    "State": "VA",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 66.09,
+    "Academic_Efficiency_Percentile": 72.94,
+    "aCFI_Percentile": 49.72,
+    "Survivability": 60.906,
+    "Latitude": 36.79932065,
+    "Longitude": -76.19440046772189
+  },
+  {
+    "University": "Roberts Wesleyan University",
+    "City": "Rochester",
+    "State": "NY",
+    "Religion": "Methodist",
+    "Market_Saturation_Percentile": 31.28,
+    "Academic_Efficiency_Percentile": 45.5,
+    "aCFI_Percentile": 49.88,
+    "Survivability": 41.567,
+    "Latitude": 43.12430275,
+    "Longitude": -77.79839481733976
+  },
+  {
+    "University": "Seattle Pacific University",
+    "City": "Seattle",
+    "State": "WA",
+    "Religion": "Methodist",
+    "Market_Saturation_Percentile": 17.85,
+    "Academic_Efficiency_Percentile": 52.15,
+    "aCFI_Percentile": 49.96,
+    "Survivability": 37.557,
+    "Latitude": 47.64886755,
+    "Longitude": -122.36196642187448
+  },
+  {
+    "University": "Southeastern University",
+    "City": "Lakeland",
+    "State": "FL",
+    "Religion": "Pentecostal",
+    "Market_Saturation_Percentile": 73.04,
+    "Academic_Efficiency_Percentile": 65.1,
+    "aCFI_Percentile": 48.36,
+    "Survivability": 61.574,
+    "Latitude": 28.03048365,
+    "Longitude": -81.91800905687728
+  },
+  {
+    "University": "Southern Nazarene University",
+    "City": "Bethany",
+    "State": "OK",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 38.17,
+    "Academic_Efficiency_Percentile": 45.78,
+    "aCFI_Percentile": 52.31,
+    "Survivability": 45.351,
+    "Latitude": 35.5138091,
+    "Longitude": -97.62930068685996
+  },
+  {
+    "University": "Southwest Baptist University",
+    "City": "Bolivar",
+    "State": "MO",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 27.86,
+    "Academic_Efficiency_Percentile": 45.46,
+    "aCFI_Percentile": 50.04,
+    "Survivability": 40.255,
+    "Latitude": 37.600760050000005,
+    "Longitude": -93.40873074472032
+  },
+  {
+    "University": "Spring Arbor University",
+    "City": "Spring Arbor",
+    "State": "MI",
+    "Religion": "Methodist",
+    "Market_Saturation_Percentile": 35.16,
+    "Academic_Efficiency_Percentile": 49.6,
+    "aCFI_Percentile": 49.8,
+    "Survivability": 43.906,
+    "Latitude": 42.20800175,
+    "Longitude": -84.55633879411187
+  },
+  {
+    "University": "Sterling College",
+    "City": "Sterling",
+    "State": "KS",
+    "Religion": "Not applicable",
+    "Market_Saturation_Percentile": 29.05,
+    "Academic_Efficiency_Percentile": 38.48,
+    "aCFI_Percentile": 48.96,
+    "Survivability": 38.904,
+    "Latitude": 38.2199775,
+    "Longitude": -98.20912245441116
+  },
+  {
+    "University": "Sterling College",
+    "City": "Sterling",
+    "State": "KS",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 23.61,
+    "Academic_Efficiency_Percentile": 37.41,
+    "aCFI_Percentile": 49.2,
+    "Survivability": 36.611,
+    "Latitude": 44.65177415,
+    "Longitude": -72.38233221619343
+  },
+  {
+    "University": "Tabor College",
+    "City": "Hillsboro",
+    "State": "KS",
+    "Religion": "Anabaptist",
+    "Market_Saturation_Percentile": 29.29,
+    "Academic_Efficiency_Percentile": 39.01,
+    "aCFI_Percentile": 52.11,
+    "Survivability": 40.367,
+    "Latitude": 38.34564655,
+    "Longitude": -97.19974490220972
+  },
+  {
+    "University": "Toccoa Falls College",
+    "City": "Toccoa Falls",
+    "State": "GA",
+    "Religion": "Evangelical Christian",
+    "Market_Saturation_Percentile": 40.94,
+    "Academic_Efficiency_Percentile": 40.09,
+    "aCFI_Percentile": 45.07,
+    "Survivability": 42.423,
+    "Latitude": 34.5937089,
+    "Longitude": -83.35634657362554
+  },
+  {
+    "University": "Trevecca Nazarene University",
+    "City": "Nashville",
+    "State": "TN",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 42.82,
+    "Academic_Efficiency_Percentile": 57.22,
+    "aCFI_Percentile": 49.44,
+    "Survivability": 48.347,
+    "Latitude": 36.1415469,
+    "Longitude": -86.75328273884115
+  },
+  {
+    "University": "Trinity Christian College",
+    "City": "Palos Heights",
+    "State": "IL",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 30.75,
+    "Academic_Efficiency_Percentile": 40.56,
+    "aCFI_Percentile": 50.64,
+    "Survivability": 40.672,
+    "Latitude": 41.6689319,
+    "Longitude": -87.78340322217727
+  },
+  {
+    "University": "Trinity International University-Illinois",
+    "City": "Deerfield",
+    "State": "IL",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 21.56,
+    "Academic_Efficiency_Percentile": 40.71,
+    "aCFI_Percentile": 47.57,
+    "Survivability": 35.798,
+    "Latitude": 42.19529545,
+    "Longitude": -87.87910360426022
+  },
+  {
+    "University": "University of Mary Hardin-Baylor",
+    "City": "Belton",
+    "State": "TX",
+    "Religion": "Baptist",
+    "Market_Saturation_Percentile": 89.76,
+    "Academic_Efficiency_Percentile": 49.24,
+    "aCFI_Percentile": 41.18,
+    "Survivability": 62.218,
+    "Latitude": 31.06868225,
+    "Longitude": -97.46482937242428
+  },
+  {
+    "University": "University of the Southwest",
+    "City": "Hobbs",
+    "State": "NM",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 28.16,
+    "Academic_Efficiency_Percentile": 41.45,
+    "aCFI_Percentile": 59.64,
+    "Survivability": 43.417,
+    "Latitude": 32.77421735,
+    "Longitude": -103.18926487314552
+  },
+  {
+    "University": "Walla Walla University",
+    "City": "College Place",
+    "State": "WA",
+    "Religion": "Seventh Day Adventist",
+    "Market_Saturation_Percentile": 39.59,
+    "Academic_Efficiency_Percentile": 43.57,
+    "aCFI_Percentile": 51.71,
+    "Survivability": 45.237,
+    "Latitude": 46.0464038,
+    "Longitude": -118.39197724477212
+  },
+  {
+    "University": "Warner Pacific University",
+    "City": "Portland",
+    "State": "OR",
+    "Religion": "Church of God",
+    "Market_Saturation_Percentile": 23.24,
+    "Academic_Efficiency_Percentile": 39.13,
+    "aCFI_Percentile": 48.17,
+    "Survivability": 36.394,
+    "Latitude": 45.5062805,
+    "Longitude": -122.59338494421556
+  },
+  {
+    "University": "Wheaton College",
+    "City": "Wheaton",
+    "State": "IL",
+    "Religion": "Interdenominational",
+    "Market_Saturation_Percentile": 50.28,
+    "Academic_Efficiency_Percentile": 47.49,
+    "aCFI_Percentile": 52.51,
+    "Survivability": 50.615,
+    "Latitude": 41.86963745,
+    "Longitude": -88.09755524953694
+  },
+  {
+    "University": "William Jessup University",
+    "City": "Rocklin",
+    "State": "CA",
+    "Religion": "Protestant",
+    "Market_Saturation_Percentile": 32.46,
+    "Academic_Efficiency_Percentile": 43.8,
+    "aCFI_Percentile": 48.56,
+    "Survivability": 41.171,
+    "Latitude": 38.8200917,
+    "Longitude": -121.29249035478844
+  },
+  {
+    "University": "Wisconsin Lutheran College",
+    "City": "Milwaukee",
+    "State": "WI",
+    "Religion": "Lutheran",
+    "Market_Saturation_Percentile": 42.58,
+    "Academic_Efficiency_Percentile": 40.48,
+    "aCFI_Percentile": 49.6,
+    "Survivability": 44.971,
+    "Latitude": 43.03726535,
+    "Longitude": -88.02194662020278
+  },
+  {
+    "University": "York University",
+    "City": "York",
+    "State": "NE",
+    "Religion": "Churches of Christ",
+    "Market_Saturation_Percentile": 29.25,
+    "Academic_Efficiency_Percentile": 39.97,
+    "aCFI_Percentile": 50.16,
+    "Survivability": 39.762,
+    "Latitude": 40.86967775,
+    "Longitude": -97.58034078874503
+  }
+];
+
+  const map = L.map('map').setView([39.5, -98.35], 4);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+  }).addTo(map);
+
+  const colorScale = d3.scaleQuantile()
+    .range(["#f46d43","#fdae61","#fee08b","#d9ef8b","#a6d96a","#66bd63","#1a9850","#006837"]);
+
+  let currentMetric = "Survivability";
+  const layerGroup = L.layerGroup().addTo(map);
+
+  function updateMap(metric) {
+    currentMetric = metric;
+    layerGroup.clearLayers();
+
+    const values = data.map(d => +d[metric]);
+    colorScale.domain(values);
+
+    data.forEach(d => {
+      const color = colorScale(+d[metric]);
+      const marker = L.circleMarker([d.Latitude, d.Longitude], {
+        radius: 7,
+        fillColor: color,
+        fillOpacity: 0.9,
+        color: "#333",
+        weight: 0.5
+      }).bindPopup(
+        `<b>${d.University}</b><br>
+        ${
+          d.City
+        }, ${d.State}<br>
+        <b>Religion:</b> ${d.Religion}<br>
+        <b>Survivability:</b> ${d.Survivability}<br>
+        <b>aCFI:</b> ${d.aCFI_Percentile}<br>
+        <b>Efficiency:</b> ${d.Academic_Efficiency_Percentile}<br>
+        <b>Market:</b> ${d.Market_Saturation_Percentile}`
+      );
+      layerGroup.addLayer(marker);
+    });
+  }
+
+  updateMap(currentMetric);
+</script>
+</body>
+</html>
