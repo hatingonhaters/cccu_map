@@ -23,11 +23,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
-
-    <div id="filter">
-      <label for="denomination-select"><strong>Filter by Denomination:</strong></label><br/>
-      <select id="denomination-select" onchange="filterByDenomination()">
-        <option value="All">All</option>
+<div id="filter">
+  <label for="denomination-select"><strong>Filter by Denomination:</strong></label><br/>
+  <select id="denomination-select" onchange="renderMap()">
+    <option value="All">All</option>
 <option value="Anabaptist">Anabaptist</option>
 <option value="Baptist">Baptist</option>
 <option value="Church of God">Church of God</option>
@@ -43,15 +42,14 @@
 <option value="Protestant">Protestant</option>
 <option value="Seventh Day Adventist">Seventh Day Adventist</option>
 <option value="Wesleyan">Wesleyan</option>
-      </select>
-    </div>
-    <div id="buttons">
-    
+  </select>
+</div>
+<div id="buttons">
   <strong>Color by:</strong><br/>
-  <button onclick="updateMap('Survivability')">Survivability</button>
-  <button onclick="updateMap('aCFI_Percentile')">aCFI</button>
-  <button onclick="updateMap('Academic_Efficiency_Percentile')">Efficiency</button>
-  <button onclick="updateMap('Market_Saturation_Percentile')">Market</button>
+  <button onclick="setMetric('Survivability')">Survivability</button>
+  <button onclick="setMetric('aCFI_Percentile')">aCFI</button>
+  <button onclick="setMetric('Academic_Efficiency_Percentile')">Efficiency</button>
+  <button onclick="setMetric('Market_Saturation_Percentile')">Market</button>
 </div>
 <div id="legend">
   <b>Metric Quantile</b><br>
@@ -1234,43 +1232,31 @@
     "Longitude": -97.58034078874503
   }
 ];
-
   const map = L.map('map').setView([39.5, -98.35], 4);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
   }).addTo(map);
 
-  const colorScale = d3.scaleQuantile()
-    .range(["#f46d43","#fdae61","#fee08b","#d9ef8b","#a6d96a","#66bd63","#1a9850","#006837"]);
+  const layerGroup = L.layerGroup().addTo(map);
+  const colorScale = d3.scaleQuantile().range(["#f46d43","#fdae61","#fee08b","#d9ef8b","#a6d96a","#66bd63","#1a9850","#006837"]);
 
   let currentMetric = "Survivability";
-  const layerGroup = L.layerGroup().addTo(map);
-let currentDenomination = 'All';
 
-  function updateMap(metric) {
-  currentMetric = metric;
-  renderMap();
-}
-
-function filterByDenomination() {
-  currentDenomination = document.getElementById('denomination-select').value;
-  renderMap();
-}
-
-function renderMap() {
-  layerGroup.clearLayers();
-  const values = data.map(d => +d[currentMetric]);
-  colorScale.domain(values);
+  function setMetric(metric) {
     currentMetric = metric;
-    layerGroup.clearLayers();
+    renderMap();
+  }
 
-    const values = data.map(d => +d[metric]);
+  function renderMap() {
+    const selectedDenom = document.getElementById("denomination-select").value;
+    const filteredData = data.filter(d => selectedDenom === "All" || d.Religion === selectedDenom);
+
+    const values = filteredData.map(d => +d[currentMetric]);
     colorScale.domain(values);
 
-    
-    data.filter(d => currentDenomination === 'All' || d.Religion === currentDenomination).forEach(d => {
-    
-      const color = colorScale(+d[metric]);
+    layerGroup.clearLayers();
+    filteredData.forEach(d => {
+      const color = colorScale(+d[currentMetric]);
       const marker = L.circleMarker([d.Latitude, d.Longitude], {
         radius: 7,
         fillColor: color,
@@ -1279,9 +1265,7 @@ function renderMap() {
         weight: 0.5
       }).bindPopup(
         `<b>${d.University}</b><br>
-        ${
-          d.City
-        }, ${d.State}<br>
+        ${d.City}, ${d.State}<br>
         <b>Religion:</b> ${d.Religion}<br>
         <b>Survivability:</b> ${d.Survivability}<br>
         <b>aCFI:</b> ${d.aCFI_Percentile}<br>
@@ -1292,6 +1276,7 @@ function renderMap() {
     });
   }
 
+  // Initial render
   renderMap();
 </script>
 </body>
