@@ -1243,8 +1243,24 @@
   let currentMetric = "Survivability";
 
   function setMetric(metric) {
+      currentMetric = metric;
+      document.querySelectorAll("#buttons button").forEach(btn => btn.classList.remove("active-metric"));
+      const label = {
+        "Survivability": "Survivability",
+        "aCFI_Percentile": "aCFI",
+        "Academic_Efficiency_Percentile": "Efficiency",
+        "Market_Saturation_Percentile": "Market"
+      };
+      document.querySelectorAll("#buttons button").forEach(btn => {
+        if (btn.textContent === label[metric]) {
+          btn.classList.add("active-metric");
+        }
+      });
+
     currentMetric = metric;
     renderMap();
+  // highlight first button
+  document.querySelectorAll('#buttons button')[0].classList.add('active-metric');
   }
 
   function renderMap() {
